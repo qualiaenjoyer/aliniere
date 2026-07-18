@@ -3,10 +3,10 @@ set -euo pipefail
 
 APP_NAME="Alinière"
 PRODUCT_NAME="Aliniere"
+EXECUTABLE_NAME="Aliniere"
 BUNDLE_ID="com.razvan.aliniere"
 VERSION="1.0"
 BUILD="1"
-ICON_SRC="/Users/razvan/Downloads/IconKitchen-Output/macos/AppIcon.icns"
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 RELEASE_DIR="$ROOT_DIR/.build/release"
@@ -14,15 +14,21 @@ APP_BUNDLE="$RELEASE_DIR/$APP_NAME.app"
 CONTENTS_DIR="$APP_BUNDLE/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
+ICON_SRC="$ROOT_DIR/Resources/AppIcon.icns"
 
 cd "$ROOT_DIR"
+
+if [[ ! -f "$ICON_SRC" ]]; then
+  echo "Missing app icon: $ICON_SRC" >&2
+  exit 1
+fi
 
 swift build -c release --product "$PRODUCT_NAME"
 
 rm -rf "$APP_BUNDLE"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 
-cp "$RELEASE_DIR/$PRODUCT_NAME" "$MACOS_DIR/$APP_NAME"
+cp "$RELEASE_DIR/$PRODUCT_NAME" "$MACOS_DIR/$EXECUTABLE_NAME"
 cp "$ICON_SRC" "$RESOURCES_DIR/AppIcon.icns"
 
 cat > "$CONTENTS_DIR/Info.plist" <<PLIST
@@ -31,7 +37,7 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
 <plist version="1.0">
 <dict>
   <key>CFBundleExecutable</key>
-  <string>$APP_NAME</string>
+  <string>$EXECUTABLE_NAME</string>
   <key>CFBundleIdentifier</key>
   <string>$BUNDLE_ID</string>
   <key>CFBundleName</key>
@@ -54,7 +60,6 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
 </plist>
 PLIST
 
-codesign --force --sign - "$MACOS_DIR/$APP_NAME"
 codesign --force --sign - "$APP_BUNDLE"
 
 echo "$APP_BUNDLE"

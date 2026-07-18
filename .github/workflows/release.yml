@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    name: Build .app
+    runs-on: macos-15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Run tests
+        run: swift test
+
+      - name: Build app bundle
+        run: zsh scripts/build-app.sh
+
+      - name: Validate app bundle
+        run: |
+          test -d ".build/release/Alinière.app"
+          test -x ".build/release/Alinière.app/Contents/MacOS/Aliniere"
+          plutil -lint ".build/release/Alinière.app/Contents/Info.plist"
+          codesign --verify --deep --strict --verbose=2 ".build/release/Alinière.app"
+
+      - name: Create release zip
+        run: ditto -c -k --sequesterRsrc --keepParent ".build/release/Alinière.app" "Alinière-${GITHUB_REF_NAME:-manual}.zip"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Alinière
+          path: "Alinière-*.zip"
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "Alinière-*.zip"
