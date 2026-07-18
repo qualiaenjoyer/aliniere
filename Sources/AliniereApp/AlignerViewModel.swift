@@ -483,7 +483,7 @@ final class AlignerViewModel {
     }
 
     func exportGIF(to url: URL) {
-        guard let cropRect = exportCropRect else { return }
+        guard let cropRect = exportRenderCropRect else { return }
         do {
             try GIFExporter().export(
                 frames: frames.map(\.cgImage),
@@ -491,7 +491,6 @@ final class AlignerViewModel {
                 offsets: frames.map(\.offset),
                 cropRect: cropRect,
                 delays: frames.map(\.delay),
-                validRect: manualCropValidRect,
                 destination: url
             )
             statusMessage = "Exported \(url.lastPathComponent)."
@@ -501,7 +500,7 @@ final class AlignerViewModel {
     }
 
     func makeGIFData() throws -> Data {
-        guard let cropRect = exportCropRect else {
+        guard let cropRect = exportRenderCropRect else {
             return Data()
         }
 
@@ -516,14 +515,13 @@ final class AlignerViewModel {
             offsets: frames.map(\.offset),
             cropRect: cropRect,
             delays: frames.map(\.delay),
-            validRect: manualCropValidRect,
             destination: url
         )
         return try Data(contentsOf: url)
     }
 
     func exportVideo(to url: URL) async {
-        guard let cropRect = exportCropRect else { return }
+        guard let cropRect = exportRenderCropRect else { return }
         do {
             try await VideoExporter().exportMP4(
                 frames: frames.map(\.cgImage),
@@ -532,8 +530,7 @@ final class AlignerViewModel {
                 cropRect: cropRect,
                 delays: frames.map(\.delay),
                 destination: url,
-                repeats: mp4RepeatCount,
-                validRect: manualCropValidRect
+                repeats: mp4RepeatCount
             )
             statusMessage = "Exported \(url.lastPathComponent)."
         } catch {
@@ -611,8 +608,23 @@ final class AlignerViewModel {
         return max(1, Int((mp4Duration / duration).rounded(.up)))
     }
 
-    private var manualCropValidRect: CGRect? {
-        cropPolicy == .manual ? commonCropRect : nil
+    private var exportRenderCropRect: CGRect? {
+        guard let first = frames.first else { return nil }
+        let crop = exportCropRect ?? CGRect(
+            x: 0,
+            y: 0,
+            width: first.cgImage.width,
+            height: first.cgImage.height
+        )
+        guard cropPolicy == .manual else { return crop }
+
+        let alignedBounds = alignedBoundsRect ?? CGRect(
+            x: 0,
+            y: 0,
+            width: first.cgImage.width,
+            height: first.cgImage.height
+        )
+        return alignedBounds.union(crop).integral
     }
 
     private func nearestAlignedOffset(to index: Int, autoOffsets: [CGSize?]) -> CGSize? {
