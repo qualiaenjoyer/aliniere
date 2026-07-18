@@ -21,7 +21,6 @@ public struct VideoExporter: Sendable {
         cropRect: CGRect,
         delays: [TimeInterval],
         destination url: URL,
-        framesPerSecond: Int32 = 30,
         repeats: Int = 8,
         validRect: CGRect? = nil
     ) async throws {
@@ -64,8 +63,8 @@ public struct VideoExporter: Sendable {
         }
         writer.startSession(atSourceTime: .zero)
 
-        let frameDuration = CMTime(value: 1, timescale: framesPerSecond)
-        var frameNumber: Int64 = 0
+        let timeScale: CMTimeScale = 600
+        var presentationTime = CMTime.zero
         let repeatedSequence = Array(repeating: sequence, count: max(1, repeats)).flatMap { $0 }
         var pixelBufferCache: [Int: CVPixelBuffer] = [:]
 
@@ -89,19 +88,16 @@ public struct VideoExporter: Sendable {
             }
 
             let delay = delays.indices.contains(index) ? delays[index] : 0.12
-            let durationFrames = max(1, Int64((delay * Double(framesPerSecond)).rounded()))
-
-            for _ in 0..<durationFrames {
-                while !input.isReadyForMoreMediaData {
-                    try await Task.sleep(nanoseconds: 2_000_000)
-                }
-
-                let presentationTime = CMTimeMultiply(frameDuration, multiplier: Int32(frameNumber))
-                guard adaptor.append(buffer, withPresentationTime: presentationTime) else {
-                    throw VideoExporterError.writerFailed(writer.error?.localizedDescription ?? "Could not append frame.")
-                }
-                frameNumber += 1
+            while !input.isReadyForMoreMediaData {
+                try await Task.sleep(nanoseconds: 2_000_000)
             }
+
+            guard adaptor.append(buffer, withPresentationTime: presentationTime) else {
+                throw VideoExporterError.writerFailed(writer.error?.localizedDescription ?? "Could not append frame.")
+            }
+
+            let step = CMTime(seconds: delay, preferredTimescale: timeScale)
+            presentationTime = CMTimeAdd(presentationTime, step)
         }
 
         input.markAsFinished()

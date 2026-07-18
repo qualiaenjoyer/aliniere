@@ -198,6 +198,9 @@ final class AliniereCoreTests: XCTestCase {
         let asset = AVURLAsset(url: url)
         let tracks = try await asset.loadTracks(withMediaType: .video)
         XCTAssertEqual(tracks.count, 1)
+
+        let duration = try await asset.load(.duration)
+        XCTAssertEqual(CMTimeGetSeconds(duration), 6.0, accuracy: 0.05)
     }
 
     func testRenderFrameUsesTopLeftCropCoordinates() throws {
