@@ -86,6 +86,14 @@ final class AlignerViewModel {
         )
     }
 
+    var alignedBoundsRect: CGRect? {
+        guard let first = frames.first else { return nil }
+        return CropCalculator.alignedBoundsRect(
+            imageSize: CGSize(width: first.cgImage.width, height: first.cgImage.height),
+            offsets: frames.map(\.offset)
+        )
+    }
+
     var exportCropRect: CGRect? {
         guard let first = frames.first else { return nil }
         let imageSize = CGSize(width: first.cgImage.width, height: first.cgImage.height)

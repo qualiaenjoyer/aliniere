@@ -48,6 +48,19 @@ final class AliniereCoreTests: XCTestCase {
         XCTAssertEqual(crop, CGRect(x: 10, y: 8, width: 84, height: 68))
     }
 
+    func testAlignedBoundsRectIncludesTranslatedEdges() {
+        let bounds = CropCalculator.alignedBoundsRect(
+            imageSize: CGSize(width: 100, height: 80),
+            offsets: [
+                .zero,
+                CGSize(width: -12, height: 7),
+                CGSize(width: 15, height: -4)
+            ]
+        )
+
+        XCTAssertEqual(bounds, CGRect(x: -12, y: -4, width: 127, height: 91))
+    }
+
     func testManualCropClampsToCommonArea() {
         let crop = CropCalculator.clampedManualCropRect(
             CGRect(x: 0, y: 0, width: 200, height: 200),

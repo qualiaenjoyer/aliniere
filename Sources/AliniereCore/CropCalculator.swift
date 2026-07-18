@@ -24,6 +24,28 @@ public enum CropCalculator {
         return intersection.integral
     }
 
+    public static func alignedBoundsRect(
+        imageSize: CGSize,
+        offsets: [CGSize]
+    ) -> CGRect {
+        guard !offsets.isEmpty else {
+            return CGRect(origin: .zero, size: imageSize).integral
+        }
+
+        var bounds = CGRect.null
+        for offset in offsets {
+            let frameRect = CGRect(
+                x: offset.width,
+                y: offset.height,
+                width: imageSize.width,
+                height: imageSize.height
+            )
+            bounds = bounds.union(frameRect)
+        }
+
+        return bounds.integral
+    }
+
     public static func clampedManualCropRect(
         _ manualRect: CGRect?,
         imageSize: CGSize,

@@ -402,13 +402,7 @@ private struct PreviewPane: View {
                     if let frame = model.previewFrame,
                        let crop = model.exportCropRect {
                         let commonCrop = model.commonCropRect
-                        let fullFrameRect = CGRect(
-                            x: 0,
-                            y: 0,
-                            width: frame.cgImage.width,
-                            height: frame.cgImage.height
-                        )
-                        let displayedCrop = model.cropPolicy == .manual ? fullFrameRect : crop
+                        let displayedCrop = displayedPreviewRect(for: frame)
                         PreviewImage(
                             frame: frame,
                             cropRect: displayedCrop,
@@ -494,7 +488,10 @@ private struct PreviewPane: View {
             height: frame.cgImage.height
         )
         guard let cropRect = model.exportCropRect else { return fullFrameRect }
-        return model.cropPolicy == .manual ? fullFrameRect : cropRect
+        guard model.cropPolicy == .manual else { return cropRect }
+
+        let alignedBounds = model.alignedBoundsRect ?? fullFrameRect
+        return alignedBounds.union(cropRect).integral
     }
 
     private func resetViewport() {
